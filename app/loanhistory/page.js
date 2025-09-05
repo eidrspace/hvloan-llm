@@ -1,8 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoanHistoryPage() {
   const [history, setHistory] = useState([]);
+  const router = useRouter();
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("loanHistory") || "[]");
@@ -23,10 +25,16 @@ export default function LoanHistoryPage() {
                 key={idx}
                 className="p-4 rounded shadow border border-gray-200 bg-gray-50"
               >
-                <p><strong>Loan ID:</strong> {loan.id}</p>
-                <p><strong>Date:</strong> {loan.date}</p>
-                <p><strong>Location:</strong> {loan.location || "N/A"}</p>
-                
+                <p>
+                  <strong>Loan ID:</strong> {loan.id}
+                </p>
+                <p>
+                  <strong>Date:</strong> {loan.date}
+                </p>
+                <p>
+                  <strong>Location:</strong> {loan.location || "N/A"}
+                </p>
+
                 <div className="mt-2">
                   <strong>Status:</strong>{" "}
                   <span
@@ -58,6 +66,16 @@ export default function LoanHistoryPage() {
             ))}
           </div>
         )}
+
+        {/* Back to Home Button */}
+        <div className="flex justify-center mt-6">
+          <button
+            onClick={() => router.push("/home")}
+            className="bg-blue-600 text-white py-2 px-6 rounded shadow hover:bg-blue-700 transition"
+          >
+            ⬅ Back to Home
+          </button>
+        </div>
       </div>
     </div>
   );

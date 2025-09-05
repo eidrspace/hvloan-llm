@@ -1,12 +1,12 @@
 "use client";
 import { useRouter } from "next/navigation";
 
-export default function HomePage() {
+export default function LanguagePage() {
   const router = useRouter();
 
   const handleLanguageSelect = (lang) => {
     localStorage.setItem("lang", lang);
-    router.push("/profile");
+    router.push("/home"); // ✅ redirect to /home instead of /profile
   };
 
   return (
@@ -27,8 +27,18 @@ export default function HomePage() {
 
         {/* Language Buttons */}
         <div className="flex flex-col gap-4 w-full">
-          <button onClick={() => handleLanguageSelect("english")}>English</button>
-          <button onClick={() => handleLanguageSelect("tamil")}>தமிழ்</button>
+          <button
+            onClick={() => handleLanguageSelect("english")}
+            className="bg-purple-600 text-white py-2 rounded"
+          >
+            English
+          </button>
+          <button
+            onClick={() => handleLanguageSelect("tamil")}
+            className="bg-purple-600 text-white py-2 rounded"
+          >
+            தமிழ்
+          </button>
         </div>
       </div>
     </div>

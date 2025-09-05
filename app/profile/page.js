@@ -263,9 +263,9 @@ export default function ProfilePage() {
               {langChoice === "tamil" ? "பயனர் ஐடி உருவாக்கப்பட்டது" : "User ID Created"}
             </h3>
             <p>{userId}</p>
-            <button onClick={() => router.push("/studentloan")}>
-              {langChoice === "tamil" ? "மாணவர் கடன் விண்ணப்பிக்கவும்" : "Apply Student Loan"}
-            </button>
+            <button onClick={() => router.push("/home")} className="bg-blue-600 text-white py-2 px-4 rounded">
+  {langChoice === "tamil" ? "🏠 முகப்பு பக்கத்திற்குச் செல்லவும்" : "🏠 Back to Home"}
+</button>
           </>
         )}
       </div>
