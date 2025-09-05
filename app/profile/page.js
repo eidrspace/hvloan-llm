@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Tesseract from "tesseract.js";
 import OCRInput from "../../components/OCRInput";
 
 export default function ProfilePage() {
@@ -62,7 +63,6 @@ export default function ProfilePage() {
 
   // Speech
   const speakText = (text) => {
-    if (!text) return;
     const utterance = new SpeechSynthesisUtterance(text);
     const voices = window.speechSynthesis.getVoices();
     if (langChoice === "tamil") {
@@ -76,7 +76,6 @@ export default function ProfilePage() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Auto speak once per step
   useEffect(() => {
     if (mounted && currentStep && spokenStep.current !== step) {
       speakText(currentStep.label);
@@ -99,28 +98,45 @@ export default function ProfilePage() {
     };
   };
 
-  // Aadhaar OCR via Google Vision API
-  const handleOcrVision = async (filePath) => {
+  // Aadhaar OCR Result Handler
+  const handleOcrResult = (text) => {
+    const digits = text.replace(/\D/g, "");
+    const match = digits.match(/\d{12}/);
+    const aadhaarNum = match ? match[0].replace(/(\d{4})(?=\d)/g, "$1 ").trim() : "";
+
+    if (aadhaarNum) {
+      setFormData({ ...formData, aadhaar: aadhaarNum });
+      setOcrMessage("✅ Aadhaar number detected successfully");
+    } else {
+      setFormData({ ...formData, aadhaar: "" });
+      setOcrMessage("⚠ Aadhaar number not detected. Please try again.");
+    }
+  };
+
+  // Hybrid OCR (Vision API first, fallback to Tesseract)
+  const handleSampleUpload = async () => {
     try {
-      setOcrMessage("🔎 Scanning Aadhaar...");
+      setOcrMessage("🔎 Scanning sample Aadhaar...");
       const res = await fetch("/api/ocr", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imagePath: filePath }),
+        body: JSON.stringify({ filePath: "/sample_aadhaar.jpeg" }),
       });
 
-      const data = await res.json();
+      if (!res.ok) throw new Error("Vision API failed");
 
-      if (data.success && data.text) {
-        setFormData({ ...formData, aadhaar: data.text });
-        setOcrMessage("✅ Aadhaar number detected successfully");
-      } else {
-        setFormData({ ...formData, aadhaar: "" });
-        setOcrMessage("⚠ Aadhaar number not detected. Please try again.");
+      const data = await res.json();
+      if (data.text) {
+        handleOcrResult(data.text);
+        return;
       }
+      throw new Error("Empty response");
     } catch (err) {
-      console.error(err);
-      setOcrMessage("⚠ Error during OCR.");
+      // 🔄 Fallback to Tesseract
+      const { data: { text } } = await Tesseract.recognize("/sample_aadhaar.jpeg", "eng", {
+        tessedit_char_whitelist: "0123456789",
+      });
+      handleOcrResult(text);
     }
   };
 
@@ -180,21 +196,27 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* Aadhaar OCR via Google Vision */}
+            {/* Aadhaar OCR */}
             {currentStep.type === "file" && currentStep.field === "aadhaar" ? (
               <div className="flex flex-col mb-4">
-                <button
-                  onClick={() => handleOcrVision("public/sample_aadhaar.jpeg")}
-                  className="bg-purple-600 text-white py-2 px-4 rounded mb-2"
-                >
-                  📂 Upload Sample Aadhaar
-                </button>
-                <button
-                  onClick={() => window.open("/sample_aadhaar.jpeg", "_blank")}
-                  className="bg-gray-600 text-white py-2 px-4 rounded"
-                >
-                  👁️ View Sample
-                </button>
+                <OCRInput
+                  label={langChoice === "tamil" ? "ஆதார் அட்டையை பதிவேற்றவும்" : "Upload Aadhaar"}
+                  onResult={handleOcrResult}
+                />
+                <div className="flex items-center mt-2 space-x-2">
+                  <button
+                    onClick={handleSampleUpload}
+                    className="bg-purple-600 text-white py-2 px-4 rounded"
+                  >
+                    📂 Upload Sample Aadhaar
+                  </button>
+                  <button
+                    onClick={() => window.open("/sample_aadhaar.jpeg", "_blank")}
+                    className="bg-gray-600 text-white py-2 px-4 rounded"
+                  >
+                    👁️ View Sample
+                  </button>
+                </div>
                 {ocrMessage && <p className="text-sm mt-2">{ocrMessage}</p>}
                 {formData.aadhaar && (
                   <p className="font-bold text-green-600 mt-2">Aadhaar: {formData.aadhaar}</p>

@@ -1,44 +1,52 @@
 import vision from "@google-cloud/vision";
+import fs from "fs";
 import path from "path";
+import { NextResponse } from "next/server";
 
-// ✅ Path to your Google service account key
-const keyPath = path.join(process.cwd(), "google-credentials.json");
-
-// ✅ Initialize Vision client
-const client = new vision.ImageAnnotatorClient({ keyFilename: keyPath });
+// ✅ Set credentials from your saved vision-key.json
+process.env.GOOGLE_APPLICATION_CREDENTIALS = path.join(process.cwd(), "vision-key.json");
 
 export async function POST(req) {
   try {
-    const body = await req.json();
-    const { imagePath } = body;
+    const { filePath } = await req.json();
 
-    if (!imagePath) {
-      return new Response(JSON.stringify({ success: false, error: "No image path provided" }), { status: 400 });
+    // 🔒 Validate
+    if (!filePath) {
+      return NextResponse.json({ error: "No filePath provided" }, { status: 400 });
     }
 
-    // 👁️ Detect text from image
-    const [result] = await client.textDetection(imagePath);
+    // ✅ If file in public folder → create absolute path
+    const absolutePath = path.join(process.cwd(), "public", filePath);
+
+    if (!fs.existsSync(absolutePath)) {
+      return NextResponse.json({ error: "File not found" }, { status: 400 });
+    }
+
+    // ✅ Init Google Vision
+    const client = new vision.ImageAnnotatorClient();
+
+    // OCR the Aadhaar sample
+    const [result] = await client.textDetection(absolutePath);
     const detections = result.textAnnotations;
 
     if (!detections || detections.length === 0) {
-      return new Response(JSON.stringify({ success: false, error: "No text detected" }), { status: 200 });
+      return NextResponse.json({ error: "No text detected" }, { status: 404 });
     }
 
-    // ✅ Extract Aadhaar (12 digits only)
+    // ✅ Extract the full detected text
     const fullText = detections[0].description;
+
+    // Return only numbers (Aadhaar style)
     const digits = fullText.replace(/\D/g, "");
     const match = digits.match(/\d{12}/);
-    const aadhaar = match ? match[0].replace(/(\d{4})(?=\d)/g, "$1 ").trim() : "";
+    const aadhaarNum = match ? match[0].replace(/(\d{4})(?=\d)/g, "$1 ").trim() : "";
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        text: aadhaar || fullText.trim(),
-      }),
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error("OCR API Error:", error);
-    return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500 });
+    return NextResponse.json({
+      text: fullText,
+      aadhaar: aadhaarNum,
+    });
+  } catch (err) {
+    console.error("OCR API error:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

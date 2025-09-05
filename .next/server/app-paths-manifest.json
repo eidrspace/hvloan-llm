@@ -1,5 +1,6 @@
 {
-  "/api/ocr/route": "app/api/ocr/route.js",
   "/profile/page": "app/profile/page.js",
+  "/studentloan/page": "app/studentloan/page.js",
+  "/loanhistory/page": "app/loanhistory/page.js",
   "/page": "app/page.js"
 }

@@ -1,4 +1,4 @@
-// File: C:\Users\Priyadharshini\OneDrive\Desktop\hvloan-llm\app\api\ocr\route.js
+// File: C:\projects\hvloan-llm\app\api\ocr\route.js
 import * as entry from '../../../../../app/api/ocr/route.js'
 import type { NextRequest } from 'next/server.js'
 

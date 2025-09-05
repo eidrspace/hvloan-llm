@@ -12,16 +12,14 @@ export default function StudentLoanPage() {
   });
 
   const [eligibility, setEligibility] = useState("");
-  const [status, setStatus] = useState(""); // approved, pending, rejected
+  const [status, setStatus] = useState("");
 
-  // ✅ Detect language on mount
   useEffect(() => {
     setMounted(true);
     const lang = localStorage.getItem("lang") || "english";
     setLangChoice(lang);
   }, []);
 
-  // Steps
   const stepsEnglish = [
     { type: "voice", label: "Enter the Student Name", field: "studentName" },
     { type: "voice", label: "Enter the Loan Amount", field: "loanAmount" },
@@ -39,8 +37,9 @@ export default function StudentLoanPage() {
   const steps = langChoice === "tamil" ? stepsTamil : stepsEnglish;
   const currentStep = steps[step] || null;
 
-  // ✅ Voice Assistant
+  // 🔊 Voice Assistant
   const speakText = (text) => {
+    if (!text) return;
     const utterance = new SpeechSynthesisUtterance(text);
     const voices = window.speechSynthesis.getVoices();
     if (langChoice === "tamil") {
@@ -58,7 +57,7 @@ export default function StudentLoanPage() {
     if (mounted && currentStep) speakText(currentStep.label);
   }, [step, currentStep, langChoice, mounted]);
 
-  // ✅ Voice Recognition Input
+  // 🎙️ Voice Recognition Input
   const startListening = (field) => {
     if (!("webkitSpeechRecognition" in window)) {
       alert("Speech Recognition not supported in this browser.");
@@ -73,52 +72,58 @@ export default function StudentLoanPage() {
     };
   };
 
+  // 🤖 Mock AI/ML Eligibility Scoring
+  const runEligibilityModel = (income, loan) => {
+    const ratio = loan / (income * 12); // loan vs yearly income
+    let result = { status: "rejected", msgEn: "", msgTa: "" };
+
+    if (ratio <= 1) {
+      result.status = "approved";
+      result.msgEn = "✅ You are eligible because your loan is within your annual income.";
+      result.msgTa = "✅ நீங்கள் தகுதியானவர், ஏனெனில் உங்கள் கடன் ஆண்டு வருமானத்திற்குள் உள்ளது.";
+    } else if (ratio <= 1.25) {
+      result.status = "pending";
+      result.msgEn = "⚠️ Your loan is slightly higher than your income. It may require manual review.";
+      result.msgTa = "⚠️ உங்கள் கடன் உங்கள் வருமானத்தை விட சற்று அதிகம். இது கையேடு மதிப்பாய்வை தேவைப்படலாம்.";
+    } else {
+      result.status = "rejected";
+      result.msgEn = "❌ You are not eligible because your loan request exceeds your income.";
+      result.msgTa = "❌ நீங்கள் தகுதியற்றவர், ஏனெனில் உங்கள் கடன் உங்கள் வருமானத்தை விட அதிகம்.";
+    }
+
+    return result;
+  };
+
   // ✅ Eligibility check
   const checkEligibility = () => {
     const income = parseFloat(localStorage.getItem("income") || "0");
     const loan = parseFloat(formData.loanAmount || "0");
 
-    if (loan <= income * 12) {
-      setEligibility(
-        langChoice === "tamil"
-          ? "✅ நீங்கள் தகுதியானவர், ஏனெனில் உங்கள் கடன் திருப்பிச் செலுத்தக்கூடியது."
-          : "✅ You are eligible because your loan request is repayable."
-      );
-      setStatus("approved");
-      speakText(eligibility);
-    } else if (loan <= income * 15) {
-      setEligibility(
-        langChoice === "tamil"
-          ? "⚠️ உங்கள் கடன் கோரிக்கை உங்கள் வருமானத்தை விட அதிகம், ஆனால் மதிப்பாய்வு செய்யப்படலாம்."
-          : "⚠️ Your loan request is higher than your income, but may go for manual review."
-      );
-      setStatus("pending");
-      speakText(eligibility);
-    } else {
-      setEligibility(
-        langChoice === "tamil"
-          ? "❌ நீங்கள் தகுதியற்றவர், ஏனெனில் உங்கள் கடன் கோரிக்கை உங்கள் வருமானத்தை விட அதிகம்."
-          : "❌ You are not eligible because your loan request exceeds your income."
-      );
-      setStatus("rejected");
-      speakText(eligibility);
-    }
+    const result = runEligibilityModel(income, loan);
+
+    setEligibility(langChoice === "tamil" ? result.msgTa : result.msgEn);
+    setStatus(result.status);
+
+    // Speak the eligibility message
+    speakText(langChoice === "tamil" ? result.msgTa : result.msgEn);
+
+    // Save history
+    const newLoan = {
+      id: "LN" + Math.floor(100000 + Math.random() * 900000),
+      date: new Date().toLocaleString(),
+      location: "Chennai", // TODO: replace with geolocation API
+      status: result.status,
+      amount: loan,
+    };
+    const existing = JSON.parse(localStorage.getItem("loanHistory") || "[]");
+    existing.push(newLoan);
+    localStorage.setItem("loanHistory", JSON.stringify(existing));
   };
 
-  // ✅ Navigation
+  // Navigation
   const handleNext = () => {
     if (currentStep?.type === "eligibility") {
       checkEligibility();
-      // Save history
-      const newLoan = {
-        id: "LN" + Math.floor(100000 + Math.random() * 900000),
-        date: new Date().toLocaleString(),
-        location: "Chennai", // TODO: replace with geolocation API
-        status,
-      };
-      const existing = JSON.parse(localStorage.getItem("loanHistory") || "[]");
-      existing.push(newLoan);
-      localStorage.setItem("loanHistory", JSON.stringify(existing));
     }
     setStep((s) => Math.min(s + 1, steps.length));
   };
