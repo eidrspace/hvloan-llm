@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap");
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Inter", sans-serif;
+}
+
+/* Background gradient */
+body {
+  background: linear-gradient(135deg, #6d28d9, #9333ea, #a855f7);
+  background-attachment: fixed;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #1f2937;
+}
+
+/* Center app container */
+.app-container {
+  width: 100%;
+  max-width: 420px; /* keeps app slim */
+  margin: auto;
+}
+
+/* Card */
+.card {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+  text-align: center;
+}
+
+/* Headings */
+h1, h2, h3 {
+  font-weight: 700;
+  color: #1e1e2f;
+  margin-bottom: 1rem;
+}
+
+/* Buttons */
+button {
+  background: linear-gradient(90deg, #7c3aed, #9333ea);
+  color: #fff;
+  border: none;
+  border-radius: 30px;
+  padding: 0.8rem 1.6rem;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+  cursor: pointer;
+  margin: 0.5rem 0;
+}
+
+button:hover {
+  background: linear-gradient(90deg, #9333ea, #a855f7);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.45);
+}
+
+button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Inputs */
+input, select {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  outline: none;
+  transition: border 0.2s ease;
+  margin-bottom: 1rem;
+}
+
+input:focus, select:focus {
+  border-color: #9333ea;
+  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.2);
+}
+
+/* File inputs */
+input[type="file"] {
+  padding: 0.4rem;
+}
+
+/* Form Labels */
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  color: #374151;
+}

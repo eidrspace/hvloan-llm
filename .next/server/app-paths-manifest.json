@@ -1,0 +1,5 @@
+{
+  "/api/ocr/route": "app/api/ocr/route.js",
+  "/profile/page": "app/profile/page.js",
+  "/page": "app/page.js"
+}
