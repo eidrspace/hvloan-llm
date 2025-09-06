@@ -24,6 +24,8 @@ export default function ProfilePage() {
   });
 
   const [userId, setUserId] = useState("");
+  const [eligibility, setEligibility] = useState("");
+  const [status, setStatus] = useState("");
 
   const stepsEnglish = [
     { type: "voice", label: "Say your First Name", field: "firstName" },
@@ -35,6 +37,7 @@ export default function ProfilePage() {
     { type: "file", label: "Upload Bank Card", field: "bankCard" },
     { type: "file", label: "Upload Collateral Document", field: "collateral" },
     { type: "review", label: "Review your details", field: "review" },
+    { type: "eligibility", label: "Check Eligibility", field: "eligibility" },
   ];
 
   const stepsTamil = [
@@ -47,6 +50,7 @@ export default function ProfilePage() {
     { type: "file", label: "வங்கி அட்டையை பதிவேற்றவும்", field: "bankCard" },
     { type: "file", label: "உத்தரவாத ஆவணத்தை பதிவேற்றவும்", field: "collateral" },
     { type: "review", label: "உங்கள் விவரங்களை சரிபார்க்கவும்", field: "review" },
+    { type: "eligibility", label: "தகுதி சரிபார்ப்பு", field: "eligibility" },
   ];
 
   const steps = langChoice === "tamil" ? stepsTamil : stepsEnglish;
@@ -93,6 +97,7 @@ export default function ProfilePage() {
     };
   };
 
+  // Aadhaar OCR Result Handler
   const handleOcrResult = (text) => {
     const digits = text.replace(/\D/g, "");
     const match = digits.match(/\d{12}/);
@@ -107,13 +112,57 @@ export default function ProfilePage() {
     }
   };
 
+  // Hybrid OCR with sample upload
+  const handleSampleUpload = async () => {
+    try {
+      setOcrMessage("🔎 Scanning sample Aadhaar...");
+      const { data: { text } } = await Tesseract.recognize("/sample_aadhaar.jpeg", "eng", {
+        tessedit_char_whitelist: "0123456789",
+      });
+      handleOcrResult(text);
+    } catch (err) {
+      setOcrMessage("⚠ Failed to process sample Aadhaar.");
+    }
+  };
+
+  // File Upload (non-Aadhaar)
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setFormData({ ...formData, [currentStep.field]: file?.name });
   };
 
+  // ✅ Eligibility Check
+  const checkEligibility = () => {
+    const income = parseFloat(formData.income || "0");
+    if (income >= 10000) {
+      setEligibility(
+        langChoice === "tamil"
+          ? "✅ நீங்கள் தகுதியானவர், ஏனெனில் உங்கள் வருமானம் போதுமானதாகும்."
+          : "✅ You are eligible because your income is sufficient."
+      );
+      setStatus("approved");
+    } else if (income > 5000) {
+      setEligibility(
+        langChoice === "tamil"
+          ? "⚠️ உங்கள் வருமானம் குறைவாக உள்ளது, ஆனால் மதிப்பாய்வு செய்யப்படலாம்."
+          : "⚠️ Your income is low, but it may go for manual review."
+      );
+      setStatus("pending");
+    } else {
+      setEligibility(
+        langChoice === "tamil"
+          ? "❌ நீங்கள் தகுதியற்றவர், ஏனெனில் உங்கள் வருமானம் போதுமானதாக இல்லை."
+          : "❌ You are not eligible because your income is too low."
+      );
+      setStatus("rejected");
+    }
+    speakText(eligibility);
+  };
+
   const handleNext = () => {
-    if (step < steps.length - 1) {
+    if (currentStep?.type === "eligibility") {
+      checkEligibility();
+    } else if (step < steps.length - 1) {
       setStep(step + 1);
     } else {
       const newId = "HV" + Math.floor(100000 + Math.random() * 900000);
@@ -181,6 +230,20 @@ export default function ProfilePage() {
               label={langChoice === "tamil" ? "ஆதார் அட்டையை பதிவேற்றவும்" : "Upload Aadhaar"}
               onResult={handleOcrResult}
             />
+            <div className="flex items-center mt-2 space-x-2">
+              <button
+                onClick={handleSampleUpload}
+                className="bg-purple-600 text-white py-2 px-4 rounded"
+              >
+                📂 Upload Sample Aadhaar
+              </button>
+              <button
+                onClick={() => window.open("/sample_aadhaar.jpeg", "_blank")}
+                className="bg-gray-600 text-white py-2 px-4 rounded"
+              >
+                👁️ View Sample
+              </button>
+            </div>
             {ocrMessage && <p className="text-sm mt-2 text-gray-600">{ocrMessage}</p>}
             {formData.aadhaar && (
               <p className="font-bold text-green-600 mt-2">Aadhaar: {formData.aadhaar}</p>
@@ -214,6 +277,21 @@ export default function ProfilePage() {
             <p className="mt-3 text-gray-600">
               {langChoice === "tamil" ? "உறுதிப்படுத்துகிறீர்களா?" : "Do you confirm?"}
             </p>
+          </div>
+        )}
+
+        {/* Eligibility Step */}
+        {currentStep?.type === "eligibility" && eligibility && (
+          <div
+            className={`p-3 mt-4 rounded font-bold ${
+              status === "approved"
+                ? "bg-green-200 text-green-800"
+                : status === "pending"
+                ? "bg-yellow-200 text-yellow-800"
+                : "bg-red-200 text-red-800"
+            }`}
+          >
+            {eligibility}
           </div>
         )}
 
