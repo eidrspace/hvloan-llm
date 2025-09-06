@@ -13,7 +13,7 @@ export default function LoanAssistantPage() {
     const lang = localStorage.getItem("lang") || "english";
     setLangChoice(lang);
 
-    // Default greeting
+    // Initial greeting
     const greeting =
       lang === "tamil"
         ? "வணக்கம், இன்று உங்களுக்கு எப்படித் உதவலாம்?"
@@ -56,7 +56,8 @@ export default function LoanAssistantPage() {
       });
 
       const data = await res.json();
-      const reply = data.reply ||
+      const reply =
+        data.reply ||
         (langChoice === "tamil"
           ? "மன்னிக்கவும், உங்களுக்கு உதவ முடியவில்லை."
           : "Sorry, I couldn’t process that.");
@@ -97,9 +98,25 @@ export default function LoanAssistantPage() {
   return (
     <div className="app-container flex flex-col h-screen">
       <div className="card flex flex-col flex-grow p-4">
-        <h2 className="text-xl font-bold mb-4 text-center">
-          {langChoice === "tamil" ? "கடன் உதவியாளர்" : "Loan Assistant"}
-        </h2>
+        {/* Header with speaker button */}
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-center flex-1">
+            {langChoice === "tamil" ? "கடன் உதவியாளர்" : "Loan Assistant"}
+          </h2>
+          <button
+            onClick={() =>
+              speakText(
+                langChoice === "tamil"
+                  ? "வணக்கம், இன்று உங்களுக்கு எப்படித் உதவலாம்?"
+                  : "Hi, how can I help you today?",
+                langChoice
+              )
+            }
+            className="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300 ml-2"
+          >
+            🔊
+          </button>
+        </div>
 
         {/* Chat Window */}
         <div className="flex-grow overflow-y-auto mb-4 space-y-2">
@@ -117,7 +134,7 @@ export default function LoanAssistantPage() {
           ))}
         </div>
 
-        {/* Input box with mic */}
+        {/* Input box with mic + send */}
         <div className="flex items-center">
           <input
             type="text"

@@ -10,7 +10,6 @@ export default function ProfilePage() {
   const [langChoice, setLangChoice] = useState("english");
   const [step, setStep] = useState(0);
   const [ocrMessage, setOcrMessage] = useState("");
-
   const spokenStep = useRef(null);
 
   const [formData, setFormData] = useState({
@@ -26,7 +25,6 @@ export default function ProfilePage() {
 
   const [userId, setUserId] = useState("");
 
-  // Steps
   const stepsEnglish = [
     { type: "voice", label: "Say your First Name", field: "firstName" },
     { type: "voice", label: "Say your Father’s Name", field: "fatherName" },
@@ -54,14 +52,12 @@ export default function ProfilePage() {
   const steps = langChoice === "tamil" ? stepsTamil : stepsEnglish;
   const currentStep = steps[step] || null;
 
-  // Detect language
   useEffect(() => {
     setMounted(true);
     const lang = localStorage.getItem("lang") || "english";
     setLangChoice(lang);
   }, []);
 
-  // Speech
   const speakText = (text) => {
     const utterance = new SpeechSynthesisUtterance(text);
     const voices = window.speechSynthesis.getVoices();
@@ -83,7 +79,6 @@ export default function ProfilePage() {
     }
   }, [step, currentStep, langChoice, mounted]);
 
-  // Voice Recognition
   const startListening = (field) => {
     if (!("webkitSpeechRecognition" in window)) {
       alert("Speech Recognition not supported in this browser.");
@@ -98,7 +93,6 @@ export default function ProfilePage() {
     };
   };
 
-  // Aadhaar OCR Result Handler
   const handleOcrResult = (text) => {
     const digits = text.replace(/\D/g, "");
     const match = digits.match(/\d{12}/);
@@ -113,40 +107,11 @@ export default function ProfilePage() {
     }
   };
 
-  // Hybrid OCR (Vision API first, fallback to Tesseract)
-  const handleSampleUpload = async () => {
-    try {
-      setOcrMessage("🔎 Scanning sample Aadhaar...");
-      const res = await fetch("/api/ocr", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filePath: "/sample_aadhaar.jpeg" }),
-      });
-
-      if (!res.ok) throw new Error("Vision API failed");
-
-      const data = await res.json();
-      if (data.text) {
-        handleOcrResult(data.text);
-        return;
-      }
-      throw new Error("Empty response");
-    } catch (err) {
-      // 🔄 Fallback to Tesseract
-      const { data: { text } } = await Tesseract.recognize("/sample_aadhaar.jpeg", "eng", {
-        tessedit_char_whitelist: "0123456789",
-      });
-      handleOcrResult(text);
-    }
-  };
-
-  // File Upload (non-Aadhaar)
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setFormData({ ...formData, [currentStep.field]: file?.name });
   };
 
-  // Navigation
   const handleNext = () => {
     if (step < steps.length - 1) {
       setStep(step + 1);
@@ -171,102 +136,117 @@ export default function ProfilePage() {
   return (
     <div className="app-container">
       <div className="card">
-        <h2 className="text-xl font-bold mb-6">
-          {langChoice === "tamil" ? "சுயவிவர உருவாக்கம்" : "Profile Creation"}
-        </h2>
+        {/* Header + Speaker */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-800">
+            {langChoice === "tamil" ? "சுயவிவர உருவாக்கம்" : "Profile Creation"}
+          </h2>
+          <button
+            onClick={() => currentStep && speakText(currentStep.label)}
+            className="bg-purple-500 text-white px-3 py-2 rounded-full hover:bg-purple-600"
+          >
+            🔊
+          </button>
+        </div>
 
-        {step < steps.length ? (
-          <>
-            <p className="mb-4 font-semibold flex items-center">
-              {currentStep.label}
-              <button onClick={() => speakText(currentStep.label)} className="ml-2">🔊</button>
-            </p>
+        {/* Step Instruction */}
+        {currentStep && (
+          <p className="mb-4 font-semibold text-gray-700">{currentStep.label}</p>
+        )}
 
-            {currentStep.type === "voice" && (
-              <div className="flex items-center">
-                <input
-                  type="text"
-                  className="w-full mb-4 p-2 border rounded"
-                  value={formData[currentStep.field]}
-                  onChange={(e) =>
-                    setFormData({ ...formData, [currentStep.field]: e.target.value })
-                  }
-                />
-                <button onClick={() => startListening(currentStep.field)} className="ml-2">🎙️</button>
-              </div>
+        {/* Voice Input */}
+        {currentStep?.type === "voice" && (
+          <div className="flex items-center mb-4">
+            <input
+              type="text"
+              className="flex-grow p-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-400"
+              value={formData[currentStep.field]}
+              onChange={(e) =>
+                setFormData({ ...formData, [currentStep.field]: e.target.value })
+              }
+            />
+            <button
+              onClick={() => startListening(currentStep.field)}
+              className="ml-2 bg-purple-500 text-white px-3 py-2 rounded-full hover:bg-purple-600"
+            >
+              🎙️
+            </button>
+          </div>
+        )}
+
+        {/* Aadhaar OCR */}
+        {currentStep?.type === "file" && currentStep.field === "aadhaar" && (
+          <div className="flex flex-col mb-4">
+            <OCRInput
+              label={langChoice === "tamil" ? "ஆதார் அட்டையை பதிவேற்றவும்" : "Upload Aadhaar"}
+              onResult={handleOcrResult}
+            />
+            {ocrMessage && <p className="text-sm mt-2 text-gray-600">{ocrMessage}</p>}
+            {formData.aadhaar && (
+              <p className="font-bold text-green-600 mt-2">Aadhaar: {formData.aadhaar}</p>
             )}
+          </div>
+        )}
 
-            {/* Aadhaar OCR */}
-            {currentStep.type === "file" && currentStep.field === "aadhaar" ? (
-              <div className="flex flex-col mb-4">
-                <OCRInput
-                  label={langChoice === "tamil" ? "ஆதார் அட்டையை பதிவேற்றவும்" : "Upload Aadhaar"}
-                  onResult={handleOcrResult}
-                />
-                <div className="flex items-center mt-2 space-x-2">
-                  <button
-                    onClick={handleSampleUpload}
-                    className="bg-purple-600 text-white py-2 px-4 rounded"
-                  >
-                    📂 Upload Sample Aadhaar
-                  </button>
-                  <button
-                    onClick={() => window.open("/sample_aadhaar.jpeg", "_blank")}
-                    className="bg-gray-600 text-white py-2 px-4 rounded"
-                  >
-                    👁️ View Sample
-                  </button>
+        {/* Other File Uploads */}
+        {currentStep?.type === "file" && currentStep.field !== "aadhaar" && (
+          <div className="flex flex-col mb-4">
+            <input type="file" onChange={handleFileChange} />
+          </div>
+        )}
+
+        {/* Review Step */}
+        {currentStep?.type === "review" && (
+          <div className="mb-4 text-left">
+            <form className="space-y-3">
+              {Object.entries(formData).map(([k, v]) => (
+                <div key={k}>
+                  <label className="font-semibold block mb-1">{k}</label>
+                  <input
+                    type="text"
+                    value={v || ""}
+                    onChange={(e) => setFormData({ ...formData, [k]: e.target.value })}
+                    className="border p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  />
                 </div>
-                {ocrMessage && <p className="text-sm mt-2">{ocrMessage}</p>}
-                {formData.aadhaar && (
-                  <p className="font-bold text-green-600 mt-2">Aadhaar: {formData.aadhaar}</p>
-                )}
-              </div>
-            ) : currentStep.type === "file" ? (
-              <div className="flex flex-col mb-4">
-                <input type="file" onChange={handleFileChange} />
-              </div>
-            ) : null}
+              ))}
+            </form>
+            <p className="mt-3 text-gray-600">
+              {langChoice === "tamil" ? "உறுதிப்படுத்துகிறீர்களா?" : "Do you confirm?"}
+            </p>
+          </div>
+        )}
 
-            {/* Review step */}
-            {currentStep.type === "review" && (
-              <div className="mb-4 text-left">
-                <form>
-                  {Object.entries(formData).map(([k, v]) => (
-                    <div key={k} className="mb-2">
-                      <label className="font-semibold block">{k}</label>
-                      <input
-                        type="text"
-                        value={v || ""}
-                        onChange={(e) => setFormData({ ...formData, [k]: e.target.value })}
-                        className="border p-1 w-full rounded"
-                      />
-                    </div>
-                  ))}
-                </form>
-                <p className="mt-2">{langChoice === "tamil" ? "உறுதிப்படுத்துகிறீர்களா?" : "Do you confirm?"}</p>
-              </div>
-            )}
-
-            <div className="flex justify-between mt-4">
-              <button onClick={handleBack} disabled={step === 0}>
-                {langChoice === "tamil" ? "⬅ முந்தையது" : "⬅ Back"}
-              </button>
-              <button onClick={handleNext}>
-                {langChoice === "tamil" ? "அடுத்து ➡" : "Next ➡"}
-              </button>
-            </div>
-          </>
+        {/* Navigation Buttons */}
+        {step < steps.length ? (
+          <div className="flex justify-between mt-6">
+            <button
+              onClick={handleBack}
+              disabled={step === 0}
+              className="bg-purple-500 text-white py-2 px-6 rounded-full hover:bg-purple-600 disabled:opacity-50"
+            >
+              {langChoice === "tamil" ? "⬅ முந்தையது" : "⬅ Back"}
+            </button>
+            <button
+              onClick={handleNext}
+              className="bg-purple-500 text-white py-2 px-6 rounded-full hover:bg-purple-600"
+            >
+              {langChoice === "tamil" ? "அடுத்து ➡" : "Next ➡"}
+            </button>
+          </div>
         ) : (
-          <>
-            <h3 className="mb-4">
+          <div className="text-center mt-6">
+            <h3 className="mb-4 text-xl font-bold text-gray-800">
               {langChoice === "tamil" ? "பயனர் ஐடி உருவாக்கப்பட்டது" : "User ID Created"}
             </h3>
-            <p>{userId}</p>
-            <button onClick={() => router.push("/home")} className="bg-blue-600 text-white py-2 px-4 rounded">
-  {langChoice === "tamil" ? "🏠 முகப்பு பக்கத்திற்குச் செல்லவும்" : "🏠 Back to Home"}
-</button>
-          </>
+            <p className="mb-4 text-lg text-purple-600 font-semibold">{userId}</p>
+            <button
+              onClick={() => router.push("/home")}
+              className="bg-blue-600 text-white py-2 px-6 rounded-full hover:bg-blue-700"
+            >
+              {langChoice === "tamil" ? "🏠 முகப்பு பக்கத்திற்குச் செல்லவும்" : "🏠 Back to Home"}
+            </button>
+          </div>
         )}
       </div>
     </div>

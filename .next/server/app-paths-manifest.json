@@ -1,5 +1,10 @@
 {
   "/api/loanassistant/route": "app/api/loanassistant/route.js",
+  "/page": "app/page.js",
+  "/loanassistant/page": "app/loanassistant/page.js",
   "/home/page": "app/home/page.js",
-  "/loanassistant/page": "app/loanassistant/page.js"
+  "/loanhistory/page": "app/loanhistory/page.js",
+  "/profile/page": "app/profile/page.js",
+  "/eligibility/page": "app/eligibility/page.js",
+  "/studentloan/page": "app/studentloan/page.js"
 }
