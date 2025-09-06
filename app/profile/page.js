@@ -237,12 +237,6 @@ export default function ProfilePage() {
               >
                 📂 Upload Sample Aadhaar
               </button>
-              <button
-                onClick={() => window.open("/sample_aadhaar.jpeg", "_blank")}
-                className="bg-gray-600 text-white py-2 px-4 rounded"
-              >
-                👁️ View Sample
-              </button>
             </div>
             {ocrMessage && <p className="text-sm mt-2 text-gray-600">{ocrMessage}</p>}
             {formData.aadhaar && (
